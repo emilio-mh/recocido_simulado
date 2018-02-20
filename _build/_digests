@@ -1,0 +1,5 @@
+"Rule: ocaml: ml & cmi -> cmx & o (%=recocido )": "f\222\131\136\023,E\022-\ryW\171!F,"
+"Rule: ocaml dependencies ml (%=recocido )": "*\172\160\012\203\0235N\228}\188Z%\203\202\208"
+"Rule: ocaml: ml -> cmo & cmi (%=recocido )": "X1@\143H[B\238\017\193\209h\186/*\181"
+"Resource: /mnt/c/Users/emili/Documents/recocido/recocido.ml": "2\011\152\160\029\138\154\006d\134\166p\t\138\250\190"
+"Rule: ocaml: cmx* & o* -> native (%=recocido )": "\"\225\224Q\225\148\174\220/\002\0020\179\173&\t"
