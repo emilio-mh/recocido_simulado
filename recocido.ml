@@ -108,7 +108,7 @@ let costo s =
   for i = 0 to (Array.length s) - 2 do
     let tmp = costos.(Array.get s i).(Array.get s (i + 1)) in
     w := !w +. tmp
-  done; !w in
+  done; !w /. (prom *. (float_of_int !e) -. 1.0) in
 
 
 let calculalote t s  =

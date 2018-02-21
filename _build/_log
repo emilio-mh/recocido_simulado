@@ -14,8 +14,6 @@ File "recocido.ml", line 61, characters 4-1113:
 Warning 10: this expression should have type unit.
 File "recocido.ml", line 28, characters 8-22:
 Warning 26: unused variable imprimir_lista.
-File "recocido.ml", line 88, characters 4-8:
-Warning 26: unused variable prom.
 # Target: recocido.cmx, tags: { package(sqlite3), compile, extension:cmx, extension:ml, file:recocido.cmx, file:recocido.ml, implem, native, ocaml, quiet }
 ocamlfind ocamlopt -c -package sqlite3 -o recocido.cmx recocido.ml
 + ocamlfind ocamlopt -c -package sqlite3 -o recocido.cmx recocido.ml
@@ -29,8 +27,6 @@ File "recocido.ml", line 61, characters 4-1113:
 Warning 10: this expression should have type unit.
 File "recocido.ml", line 28, characters 8-22:
 Warning 26: unused variable imprimir_lista.
-File "recocido.ml", line 88, characters 4-8:
-Warning 26: unused variable prom.
 # Target: recocido.native, tags: { package(sqlite3), dont_link_with, extension:native, file:recocido.native, link, native, ocaml, program, quiet }
 ocamlfind ocamlopt -linkpkg -package sqlite3 recocido.cmx -o recocido.native
 # Compilation successful.
