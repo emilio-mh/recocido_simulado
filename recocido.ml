@@ -25,18 +25,44 @@ Printf.printf "lot = %d\n" !lote_tam;
 
 let () = Random.init !semilla in
 
+let rec imprimir_lista l = match l with
+  | [] -> Printf.printf "\n"
+  | e :: t -> Printf.printf "%s " e; imprimir_lista t in
+let imprimir_sol s f =
+  Printf.printf "%f : " f;
+  for i = 0 to (Array.length s) - 1 do
+    Printf.printf "%d " (Array.get s i)
+  done;
+  Printf.printf "\n" in
+
 let file = open_in "problema" in
 let line = input_line file in
-
-let inst = Array.of_list (List.map (function x -> int_of_string x) (String.split_on_char ',' line)) in
+let siz = String.length line in
+let liine = String.sub line 0 (siz-1) in
+let tmp = String.split_on_char ',' liine in
+let inst = Array.of_list (List.map int_of_string  tmp)in
+imprimir_sol inst 1.1 ;
 let n    = Array.length inst in
 
-let costos = ref (Array.make 1 1) in 
-(
-  let db = db_open "tsp" in
-  4
-);
 
+let db = db_open "tsp.db" in
+let e = ref 0 in
+exec db "SELECT count(id) FROM cities" ~cb:(fun row _ ->
+  match row.(0) with
+  | Some a -> e := int_of_string a
+  | _ -> ());
+Printf.printf "%d\n" !e;
+let costos = Array.make_matrix (!e + 1) (!e + 1) 0.0 in
+let res =
+  exec db "SELECT * FROM connections" ~cb:(fun row _ ->
+  match row.(0), row.(1), row.(2) with
+  | Some a, Some b, Some d ->
+  let c1 = int_of_string a in
+  let c2 = int_of_string b in
+  let w = float_of_string d in
+  Array.set costos.(c2) c1 w;
+  Array.set costos.(c1) c2 w
+  | _, _, _ -> ()) in
 
 let rand = (fun _ -> (fun _ -> (Random.int n) - 1)) in
 
@@ -54,18 +80,11 @@ let vecino x =
   Array.set inst j aux;
   x) in 
 
-let imprimir_sol (s : int array) (f : float) =
-  Printf.printf "%f : " f;
-  for i = 0 to (Array.length s) - 1 do
-    Printf.printf "%d " (Array.get s i)
-  done;
-  Printf.printf "\n" in
-
 
 let costo = (fun _ -> 1.0) in
 
 
-let calculalote (t : float) (s : int array ref)  =
+let calculalote t s  =
   let fs = costo !s in
   let c = ref 0   in
   let r = ref 0.0   in
@@ -82,7 +101,7 @@ let calculalote (t : float) (s : int array ref)  =
   done;
   (!r /. float_of_int (!lote_tam), s) in
 
-let aceptacionumbrales (t : float ref) (s : int array ref) = 
+let aceptacionumbrales t s = 
   let p = ref 0.0 in
   while t > temp_min do
     let q = ref Pervasives.max_float in
@@ -95,6 +114,6 @@ let aceptacionumbrales (t : float ref) (s : int array ref) =
     t := !t *. !phi
   done in
 
-aceptacionumbrales temp_ini (ref inst) 
+aceptacionumbrales temp_ini (ref inst)
 
 end
