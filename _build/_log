@@ -1,32 +1,24 @@
 ### Starting build.
-# Target: recocido.ml.depends, tags: { package(sqlite3), extension:ml, file:recocido.ml, ocaml, ocamldep, quiet }
-ocamlfind ocamldep -package sqlite3 -modules recocido.ml > recocido.ml.depends
-# Target: recocido.cmo, tags: { package(sqlite3), byte, compile, extension:cmo, extension:ml, file:recocido.cmo, file:recocido.ml, implem, ocaml, quiet }
-ocamlfind ocamlc -c -package sqlite3 -o recocido.cmo recocido.ml
-+ ocamlfind ocamlc -c -package sqlite3 -o recocido.cmo recocido.ml
-File "recocido.ml", line 50, characters 0-128:
+# Target: recocido.ml.depends, tags: { package(sqlite3), package(str), extension:ml, file:recocido.ml, ocaml, ocamldep, quiet }
+ocamlfind ocamldep -package str -package sqlite3 -modules recocido.ml > recocido.ml.depends
+# Target: recocido.cmo, tags: { package(sqlite3), package(str), byte, compile, extension:cmo, extension:ml, file:recocido.cmo, file:recocido.ml, implem, ocaml, quiet }
+ocamlfind ocamlc -c -package str -package sqlite3 -o recocido.cmo recocido.ml
++ ocamlfind ocamlc -c -package str -package sqlite3 -o recocido.cmo recocido.ml
+File "recocido.ml", line 58, characters 0-132:
 Warning 10: this expression should have type unit.
-File "recocido.ml", line 75, characters 8-258:
+File "recocido.ml", line 70, characters 0-475:
 Warning 10: this expression should have type unit.
-File "recocido.ml", line 79, characters 8-258:
+File "recocido.ml", line 181, characters 0-11:
 Warning 10: this expression should have type unit.
-File "recocido.ml", line 61, characters 4-1113:
+# Target: recocido.cmx, tags: { package(sqlite3), package(str), compile, extension:cmx, extension:ml, file:recocido.cmx, file:recocido.ml, implem, native, ocaml, quiet }
+ocamlfind ocamlopt -c -package str -package sqlite3 -o recocido.cmx recocido.ml
++ ocamlfind ocamlopt -c -package str -package sqlite3 -o recocido.cmx recocido.ml
+File "recocido.ml", line 58, characters 0-132:
 Warning 10: this expression should have type unit.
-File "recocido.ml", line 28, characters 8-22:
-Warning 26: unused variable imprimir_lista.
-# Target: recocido.cmx, tags: { package(sqlite3), compile, extension:cmx, extension:ml, file:recocido.cmx, file:recocido.ml, implem, native, ocaml, quiet }
-ocamlfind ocamlopt -c -package sqlite3 -o recocido.cmx recocido.ml
-+ ocamlfind ocamlopt -c -package sqlite3 -o recocido.cmx recocido.ml
-File "recocido.ml", line 50, characters 0-128:
+File "recocido.ml", line 70, characters 0-475:
 Warning 10: this expression should have type unit.
-File "recocido.ml", line 75, characters 8-258:
+File "recocido.ml", line 181, characters 0-11:
 Warning 10: this expression should have type unit.
-File "recocido.ml", line 79, characters 8-258:
-Warning 10: this expression should have type unit.
-File "recocido.ml", line 61, characters 4-1113:
-Warning 10: this expression should have type unit.
-File "recocido.ml", line 28, characters 8-22:
-Warning 26: unused variable imprimir_lista.
-# Target: recocido.native, tags: { package(sqlite3), dont_link_with, extension:native, file:recocido.native, link, native, ocaml, program, quiet }
-ocamlfind ocamlopt -linkpkg -package sqlite3 recocido.cmx -o recocido.native
+# Target: recocido.native, tags: { package(sqlite3), package(str), dont_link_with, extension:native, file:recocido.native, link, native, ocaml, program, quiet }
+ocamlfind ocamlopt -linkpkg -package str -package sqlite3 recocido.cmx -o recocido.native
 # Compilation successful.
