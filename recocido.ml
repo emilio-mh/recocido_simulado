@@ -107,23 +107,32 @@ let instancia = Array.of_list (List.map int_of_string (String.split_on_char ',' 
 
 let mejor_solucion = ref instancia in
 let mejor_costo = ref (costo instancia) in
+let mejoro = ref false in
 
-let rec barrido (s : int array) : (int array) = 
-  let nv = ref (Array.copy s) in
-  for i = 0 to (Array.length s) -1 do
-    for j = i + 1 to (Array.length s) -1 do
-      Array.set !nv i (Array.get s j);
-      Array.set !nv j (Array.get s i);
-      if costo !nv < costo s then (
-        nv := barrido !nv
-      ) else (
-        Array.set !nv j (Array.get s j);
-        Array.set !nv i (Array.get s i);
-      )
+let barridoaux s = 
+  let mejor = ref 5.0 in
+  let ss = ref s in
+  for i = 0 to (Array.length s) - 1 do 
+    for j = i + 1 to (Array.length s) - 1 do
+      let tmp = Array.get s i in
+      Array.set s i (Array.get s j);
+      Array.set s j tmp;
+      let fs = (costo s) in
+      if (fs < !mejor) then ( mejor := fs; ss := (Array.copy s); );
+      Array.set s j (Array.get s i);
+      Array.set s i tmp;
+    done;
+  done; ss
+  in
 
-    done
-  done;
-  !nv in
+let rec barrido (s : int array ref) = 
+  let nv = (barridoaux (Array.copy !s)) in
+  let fs = costo !nv in
+  while costo !nv < costo !s do
+    s  := !nv;
+    nv := !(barridoaux ! nv);
+  done; ()
+  in
 
 
 
@@ -146,9 +155,13 @@ let calcula_lote (t : float) (s : int array ref) : float*(int array) =
     if fs < (costo !s) +. t then (   
         if fs < !mejor_costo then (
           printf "E: %2.9f\n" fs;
+          mejoro := true;
+          printf "E: %2.9f\n" (costo !s);
           mejor_solucion := Array.copy !ss;
           mejor_costo := fs;
+          barrido mejor_solucion;
           
+          mejor_costo := costo !mejor_solucion;
         );
         s := !ss;
         r := !r +. fs;
@@ -158,7 +171,7 @@ let calcula_lote (t : float) (s : int array ref) : float*(int array) =
   ((!r /. (float_of_int !c)), !s) in
 
 let umbrales (t : float ref) (s : int array ref) : unit =
-  Array.sort (fun _ _ -> (Random.int 3) - 1) instancia;
+  Array.sort (fun x y -> if x > y then 1 else -1) instancia;
   printf "Inicio semilla %d\n" !semilla;
   let p = ref 0.0 in
   let i = ref 0 in
@@ -194,19 +207,25 @@ let rec eval (m : int) =
   if m = 0 then
     ()
   else(
+    mejoro := false;
     temp_i := !temp_in;
-    semilla := !semilla + n;
+    semilla := !semilla + m;
     Random.init !semilla;
     umbrales temp_i (ref instancia);
-    let out = open_out (sprintf "reportes/emilio%d-%n.tsp" n !semilla) in
-    imprimir_arreglo out !mejor_solucion;
-    fprintf out "\n%2.9f\n" !mejor_costo;
-    (*fprintf out "Fctible %B" (factible !mejor_solucion);*)
-    close_out out;
-    flush stdout;
+    
+    if !mejoro then (
+      let out = open_out (sprintf "reportes/emilio%d-%n.tsp" n !semilla) in
+      imprimir_arreglo out !mejor_solucion;
+      fprintf out "\n%2.9f\n" (costo !mejor_solucion);
+      close_out out;
+      barrido mejor_solucion;
+      flush stdout;
+    );
+    
     eval (m-1)
   ) in
 
+flush stdout;
 let () = eval !evals   in  
 
 
