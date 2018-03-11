@@ -9,27 +9,30 @@ let temp_m  = ref 0.001      in
 let phi     = ref 0.99       in
 let source  = ref "problema" in
 let evals   = ref 1          in
+let b       = ref 0          in
 begin
 
 Arg.parse[
-  ("-phi" , Arg.Float  (function i -> phi     := i), "Factor de enfriamiento"                 );
-  ("-ti"  , Arg.Float  (function i -> temp_in := i), "Temperatura inicial"                    );
-  ("-tm"  , Arg.Float  (function i -> temp_m  := i), "Temperatura minima"                     );
-  ("-s"   , Arg.Int    (function i -> semilla := i), "Semilla para el PRG"                    );
-  ("-l"   , Arg.Int    (function i -> lote    := i), "Tamaño del lote"                        );
-  ("-src" , Arg.String (function i -> source  := i), "Archivo con la descripción del problema");
-  ("-n"   , Arg.Int    (function i -> evals   := i), "Númro de evaluaciones"                  );
+  ("-phi" , Arg.Float  (function i -> phi     := i), "Factor de enfriamiento"                  );
+  ("-ti"  , Arg.Float  (function i -> temp_in := i), "Temperatura inicial"                     );
+  ("-tm"  , Arg.Float  (function i -> temp_m  := i), "Temperatura minima"                      );
+  ("-s"   , Arg.Int    (function i -> semilla := i), "Semilla para el PRG"                     );
+  ("-l"   , Arg.Int    (function i -> lote    := i), "Tamaño del lote"                         );
+  ("-src" , Arg.String (function i -> source  := i), "Archivo con la descripción del problema" );
+  ("-n"   , Arg.Int    (function i -> evals   := i), "Número de evaluaciones"                  );
+  ("-b"   , Arg.Int    (function i -> b       := i), "Activa barrido"                          );
   ](function s -> ()) "Error leyendo parámetros" ;
 
 
   let temp_i = ref !temp_in in
-
+  (*
 Printf.printf "phi = %f\n" !phi;
 Printf.printf "t_i = %f\n" !temp_i;
 Printf.printf "t_m = %f\n" !temp_m;
 Printf.printf "sem = %d\n" !semilla;
 Printf.printf "lot = %d\n" !lote;
-
+Printf.printf "b = %B\n" !b;
+*)
 Random.init !semilla;
 
 let imprimir_arreglo out a = 
@@ -49,6 +52,7 @@ let re =  Str.regexp "[\r\n]" in
 let line = Str.global_replace re "" lin in
 
 let instancia = Array.of_list (List.map int_of_string (String.split_on_char ',' line)) in
+
 
 
 (*Inicio de la lectura de la base de datos*)
@@ -74,7 +78,7 @@ let instancia = Array.of_list (List.map int_of_string (String.split_on_char ',' 
 
   (*Leer las distancias que se usarán*)
   begin
-    printf "%s\n" str;
+    
     exec db (sprintf "SELECT id_city_1, id_city_2, distance FROM connections WHERE id_city_1 IN (%s) AND id_city_2 IN (%s)" str str)
       ~cb:(fun row _ ->
       match row.(0), row.(1), row.(2) with
@@ -102,7 +106,7 @@ let instancia = Array.of_list (List.map int_of_string (String.split_on_char ',' 
     done;
     !w /. (promedio *. (float_of_int (n - 1)) ) in
 
-  printf "%2.9f\n" (costo instancia);
+
 
 
 let mejor_solucion = ref instancia in
@@ -110,7 +114,7 @@ let mejor_costo = ref (costo instancia) in
 let mejoro = ref false in
 
 let barridoaux s = 
-  let mejor = ref 5.0 in
+  let mejor = ref (costo s) in
   let ss = ref s in
   for i = 0 to (Array.length s) - 1 do 
     for j = i + 1 to (Array.length s) - 1 do
@@ -130,8 +134,8 @@ let rec barrido (s : int array ref) =
   let fs = costo !nv in
   while costo !nv < costo !s do
     s  := !nv;
-    nv := !(barridoaux ! nv);
-  done; ()
+    nv := !(barridoaux (Array.copy !nv));
+  done; nv
   in
 
 
@@ -144,6 +148,8 @@ let vecino (s : int array ref) : (int array ref) =
   Array.set r j (Array.get !s i);
   ref r in
 
+let ai = ref 0 in
+
 let calcula_lote (t : float) (s : int array ref) : float*(int array) =
   let c = ref 0   in
   let r = ref 0.0 in
@@ -153,26 +159,35 @@ let calcula_lote (t : float) (s : int array ref) : float*(int array) =
     i := !i + 1;
     let fs = costo !ss in
     if fs < (costo !s) +. t then (   
-        if fs < !mejor_costo then (
-          printf "E: %2.9f\n" fs;
-          mejoro := true;
-          printf "E: %2.9f\n" (costo !s);
-          mejor_solucion := Array.copy !ss;
-          mejor_costo := fs;
-          barrido mejor_solucion;
-          
-          mejor_costo := costo !mejor_solucion;
+      printf "%d, %2.9f\n" !ai fs;
+      ai := !ai + 1;
+      if fs < !mejor_costo then (
+        mejoro := true;
+        mejor_solucion := Array.copy !ss;
+        mejor_costo := fs;
+        
+        if !b = 1 then (
+          mejor_solucion := !(barrido mejor_solucion);
         );
-        s := !ss;
-        r := !r +. fs;
-        c := !c + 1;
+        if !b = 2 then (
+          ss := !(barrido ss);
+          mejor_solucion := Array.copy !ss;
+        );
+
+        let cms = costo !mejor_solucion in
+        printf "%d, %2.9f\n" !ai cms;
+        ai := !ai + 1;
+        mejor_costo := cms;
+      );
+      s := !ss;
+      r := !r +. fs;
+      c := !c + 1;
     );
   )done;
   ((!r /. (float_of_int !c)), !s) in
 
 let umbrales (t : float ref) (s : int array ref) : unit =
-  Array.sort (fun x y -> if x > y then 1 else -1) instancia;
-  printf "Inicio semilla %d\n" !semilla;
+  Array.sort (fun x y -> if x > y then 1 else -1) instancia; 
   let p = ref 0.0 in
   let i = ref 0 in
   while !t > !temp_m do (
@@ -218,7 +233,7 @@ let rec eval (m : int) =
       imprimir_arreglo out !mejor_solucion;
       fprintf out "\n%2.9f\n" (costo !mejor_solucion);
       close_out out;
-      barrido mejor_solucion;
+      
       flush stdout;
     );
     
