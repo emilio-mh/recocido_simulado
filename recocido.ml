@@ -1,15 +1,17 @@
+
 open Printf;;
 open Sqlite3;;
 
 
-let semilla = ref 7          in
-let lote    = ref 25         in
-let temp_in = ref 1.1        in
-let temp_m  = ref 0.001      in
-let phi     = ref 0.99       in
-let source  = ref "problema" in
-let evals   = ref 1          in
-let b       = ref 0          in
+let semilla = ref 524287            in
+let lote    = ref 2000              in
+let temp_in = ref 1.2               in
+let temp_m  = ref 0.00005           in
+let phi     = ref 0.99              in
+let source  = ref "problema150.tsp" in
+let evals   = ref 1                 in
+let b       = ref 1                 in
+let v       = ref false             in
 begin
 
 Arg.parse[
@@ -21,32 +23,18 @@ Arg.parse[
   ("-src" , Arg.String (function i -> source  := i), "Archivo con la descripción del problema" );
   ("-n"   , Arg.Int    (function i -> evals   := i), "Número de evaluaciones"                  );
   ("-b"   , Arg.Int    (function i -> b       := i), "Activa barrido"                          );
+  ("-v"   , Arg.Int    (function _ -> v    := true), "Modo verboso"                            );
   ](function s -> ()) "Error leyendo parámetros" ;
 
 
-  let temp_i = ref !temp_in in
-  (*
-Printf.printf "phi = %f\n" !phi;
-Printf.printf "t_i = %f\n" !temp_i;
-Printf.printf "t_m = %f\n" !temp_m;
-Printf.printf "sem = %d\n" !semilla;
-Printf.printf "lot = %d\n" !lote;
-Printf.printf "b = %B\n" !b;
-*)
-Random.init !semilla;
-
-let imprimir_arreglo out a = 
-for i = 0 to (Array.length a) - 1 do
-  fprintf out "%d " (a).(i)
-done;
-in
+let temp_i = ref !temp_in in
 
 
+(*Lectura de la instancia*)
 
 let file = open_in !source in
 let lin = input_line file in
 close_in file;
-
 
 let re =  Str.regexp "[\r\n]" in
 let line = Str.global_replace re "" lin in
@@ -57,20 +45,16 @@ let instancia = Array.of_list (List.map int_of_string (String.split_on_char ',' 
 
 (*Inicio de la lectura de la base de datos*)
 
+let db = db_open "tsp.db" in
 
-  let db = db_open "tsp.db" in
-  (*Leer el tamaño de la base de datos*)
+let e = ref 0 in
+let strr = (Array.fold_left (^) "" (Array.map ((^) ",") (Array.map string_of_int instancia)))in
+let str = String.sub strr 1 ((String.length strr) - 1) in
 
-  let e = ref 0 in
-  let strr = (Array.fold_left (^) "" (Array.map ((^) ",") (Array.map string_of_int instancia)))in
-  let str = String.sub strr 1 ((String.length strr) - 1) in
-
-  exec db "SELECT count(id) FROM cities" ~cb:(fun row _ ->
-    match row.(0) with
-      | Some a -> e := int_of_string a
-      | _ -> ());
-
-  (*Printf.printf  "%s\n" str;*)
+exec db "SELECT count(id) FROM cities" ~cb:(fun row _ ->
+  match row.(0) with
+    | Some a -> e := int_of_string a
+    | _ -> ());
 
   let costos = Array.make_matrix (!e + 1) (!e + 1) 12982205.69 in
   let sum = ref 0.0 in
@@ -93,52 +77,24 @@ let instancia = Array.of_list (List.map int_of_string (String.split_on_char ',' 
         | _ -> ());
   end;
 
+db_close db;
 
   (*Fin de la lectura de la base de datos*)
 
-  let promedio = !sum /. (float_of_int (!e_s )) in
-  let n = Array.length instancia in
+let promedio = !sum /. (float_of_int (!e_s )) in
 
-  let costo (s : int array) : float = 
-    let w = ref 0.0 in
-    for i = 0 to (Array.length s) - 2 do
-      w := !w +. (costos.(s.(i)).(s.(i+1)))
-    done;
-    !w /. (promedio *. (float_of_int (n - 1)) ) in
+let costo = Evaluacion.costo costos promedio in
 
-
+let n = Array.length instancia in
 
 
 let mejor_solucion = ref instancia in
 let mejor_costo = ref (costo instancia) in
 let mejoro = ref false in
 
-let barridoaux s = 
-  let mejor = ref (costo s) in
-  let ss = ref s in
-  for i = 0 to (Array.length s) - 1 do 
-    for j = i + 1 to (Array.length s) - 1 do
-      let tmp = Array.get s i in
-      Array.set s i (Array.get s j);
-      Array.set s j tmp;
-      let fs = (costo s) in
-      if (fs < !mejor) then ( mejor := fs; ss := (Array.copy s); );
-      Array.set s j (Array.get s i);
-      Array.set s i tmp;
-    done;
-  done; ss
-  in
-
-let rec barrido (s : int array ref) = 
-  let nv = (barridoaux (Array.copy !s)) in
-  let fs = costo !nv in
-  while costo !nv < costo !s do
-    s  := !nv;
-    nv := !(barridoaux (Array.copy !nv));
-  done; nv
-  in
-
-
+let barrido = Barrido.barrido in
+let barrido3 = Barrido.barrido3 in
+let imprimir_arreglo = Misc.imprimir_arreglo in
 
 let vecino (s : int array ref) : (int array ref) =
   let i = Random.int n in
@@ -159,7 +115,7 @@ let calcula_lote (t : float) (s : int array ref) : float*(int array) =
     i := !i + 1;
     let fs = costo !ss in
     if fs < (costo !s) +. t then (   
-      printf "%d, %2.9f\n" !ai fs;
+      if !v then (printf "%d, %2.9f\n" !ai fs;);
       ai := !ai + 1;
       if fs < !mejor_costo then (
         mejoro := true;
@@ -167,15 +123,15 @@ let calcula_lote (t : float) (s : int array ref) : float*(int array) =
         mejor_costo := fs;
         
         if !b = 1 then (
-          mejor_solucion := !(barrido mejor_solucion);
+          mejor_solucion := barrido mejor_solucion costo;
         );
         if !b = 2 then (
-          ss := !(barrido ss);
+          ss := barrido ss costo;
           mejor_solucion := Array.copy !ss;
         );
 
         let cms = costo !mejor_solucion in
-        printf "%d, %2.9f\n" !ai cms;
+        if !v then ( printf "%d, %2.9f\n" !ai cms;);
         ai := !ai + 1;
         mejor_costo := cms;
       );
@@ -201,21 +157,10 @@ let umbrales (t : float ref) (s : int array ref) : unit =
     )done;
     t := !t *. !phi
   )done;
+  s := barrido3 s costo;
+  let cf = costo !s in
+  if cf < !mejor_costo then (mejoro := true;);
   in
-
-let factible (s : int array) = 
-  let fact = ref true in
-  for i = 0 to (Array.length !mejor_solucion) - 2 do
-    let c1 = (Array.get !mejor_solucion i) in
-    let c2 = (Array.get !mejor_solucion (i + 1)) in
-    let sql = (sprintf "select count(distance) from connections where (id_city_1 = %d and id_city_2 = %d) or (id_city_1 = %d and id_city_2 = %d)" c1 c2 c2 c1) in 
-    match exec db sql ~cb:(fun r _ ->
-      match r.(0) with
-        | Some a ->  if 0 = (int_of_string a) then fact := false
-        | _ -> () ) with
-    | Rc.OK -> ()
-     | _ -> ()
-  done; !fact in
 
 
 let rec eval (m : int) =
@@ -232,6 +177,7 @@ let rec eval (m : int) =
       let out = open_out (sprintf "reportes/emilio%d-%n.tsp" n !semilla) in
       imprimir_arreglo out !mejor_solucion;
       fprintf out "\n%2.9f\n" (costo !mejor_solucion);
+      fprintf stdout "\n%2.9f\n" (costo !mejor_solucion);
       close_out out;
       
       flush stdout;
@@ -243,7 +189,5 @@ let rec eval (m : int) =
 flush stdout;
 let () = eval !evals   in  
 
-
-db_close db;
 ();
-end;()
+end
