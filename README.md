@@ -1,6 +1,6 @@
 
 
-### Markdown
+### Recocido Simulado
 
 Instrucciones para compilar:
 
@@ -14,5 +14,5 @@ opam install ocamlfind
 opam install sqlite3
 
 
-ocamlbuild -use-ocamlfind 
+ocamlbuild -use-ocamlfind -pkgs sqlite3,str recocido.native
 
